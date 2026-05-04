@@ -7,13 +7,13 @@ services:
       - '3000:3000'
     environment:
       - PORT=3000
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/pain_db
+      - DATABASE_URL=postgresql://postgres:postgres@pain-db:5432/pain_db
     depends_on:
-      - db
+      - pain-db
     volumes:
       - ./pain-server/data:/usr/src/app/data
 
-  db:
+  pain-db:
     build:
       context: ./pain-db
       dockerfile: Dockerfile
