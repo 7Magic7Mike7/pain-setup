@@ -24,7 +24,7 @@ if (-not $containerId) {
 
 if ($Init) {
     Write-Host "Initializing database schema..."
-    docker exec -it pppmap-pain-db-1 psql -U postgres -d pain_db -c "CREATE TABLE DummyPain (id SERIAL PRIMARY KEY, x FLOAT NOT NULL, y FLOAT NOT NULL, value FLOAT, datatype TEXT NOT NULL, painorigin TEXT);"
+    docker exec -it $containerId psql -U postgres -d pain_db -c "CREATE TABLE DummyPain (id SERIAL PRIMARY KEY, x FLOAT NOT NULL, y FLOAT NOT NULL, value FLOAT, datatype TEXT NOT NULL, painorigin TEXT);"
 }
 elseif ($Fill) {
     $csvFile = Join-Path $workspaceRoot "pain\data\dummy\db_data.csv"
