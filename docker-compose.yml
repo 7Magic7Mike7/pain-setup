@@ -1,8 +1,8 @@
 services:
   pain-server:
     build:
-      context: ./pain-server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: pain-server/Dockerfile
     ports:
       - '3000:3000'
     environment:
