@@ -22,9 +22,21 @@ if (-not $containerId) {
     exit 1
 }
 
+# load config variables from db-config.env
+$configFile = Join-Path $PSScriptRoot 'db-config.env'
+if (-not (Test-Path $configFile)) {
+    throw "Missing DB config: $configFile"
+}
+# load config file and set variables
+Get-Content $configFile | ForEach-Object {
+    if ($_ -match '^\s*([^=]+)\s*=\s*(.*)\s*$') {
+        Set-Variable -Name $matches[1] -Value $matches[2]
+    }
+}
+
 if ($Init) {
     Write-Host "Initializing database schema..."
-    docker exec -it $containerId psql -U postgres -d pain_db -c "CREATE TABLE DummyPain (id SERIAL PRIMARY KEY, x FLOAT NOT NULL, y FLOAT NOT NULL, value FLOAT, datatype TEXT NOT NULL, painorigin TEXT);"
+    docker exec -it $containerId psql -U postgres -d pain_db -c "CREATE TABLE $TABLE_NAME ($COL_ID SERIAL PRIMARY KEY, $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL, $COL_VALUE FLOAT, $COL_DATATYPE TEXT NOT NULL, $COL_PAINORIGIN TEXT);"
 }
 elseif ($Fill) {
     $csvFile = Join-Path $workspaceRoot "pain\data\dummy\db_data.csv"
@@ -32,21 +44,21 @@ elseif ($Fill) {
     
     Write-Host "Filling database with dummy data..."
     docker cp $csvFile "$($containerId):$dest"
-    docker exec $containerId psql -U postgres -d pain_db -c "COPY DummyPain FROM '$dest' CSV HEADER;"
-    Write-Host "Imported data from $csvFile into DummyPain table"
+    docker exec $containerId psql -U postgres -d pain_db -c "COPY $TABLE_NAME FROM '$dest' CSV HEADER;"
+    Write-Host "Imported data from $csvFile into $TABLE_NAME table"
 }
 elseif ($Test) {
     Write-Host "Testing database connection and contents..."
-    docker exec -it $containerId psql -U postgres -d pain_db -c "SELECT * FROM DummyPain LIMIT 7;"
+    docker exec -it $containerId psql -U postgres -d pain_db -c "SELECT * FROM $TABLE_NAME LIMIT 7;"
 }
 elseif ($Reset) {
     Write-Host "Resetting database..."
-    docker exec -it $containerId psql -U postgres -d pain_db -c "DROP TABLE IF EXISTS DummyPain;"
+    docker exec -it $containerId psql -U postgres -d pain_db -c "DROP TABLE IF EXISTS $TABLE_NAME;"
 }
 else {
     Write-Host "Usage: .\populate-db.ps1 -Init | -Fill | -Test | -Reset"
     Write-Host "  -Init  : Initialize database schema (run once)"
     Write-Host "  -Fill  : Fill database with dummy data (run after init)"
     Write-Host "  -Test  : Test database connection and contents"
-    Write-Host "  -Reset : Reset database by dropping the DummyPain table"
+    Write-Host "  -Reset : Reset database by dropping the $TABLE_NAME table"
 }
