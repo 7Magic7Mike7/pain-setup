@@ -4,7 +4,8 @@
 param(
     [switch]$Up,
     [switch]$Down,
-    [switch]$Build
+    [switch]$Build,
+    [switch]$Full
 )
 
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
@@ -29,15 +30,24 @@ function Run-DockerCompose {
 if ($Up) {
     Copy-ComposeFile
     Run-DockerCompose "up -d"
-} elseif ($Down) {
+}
+elseif ($Down) {
     Copy-ComposeFile
     Run-DockerCompose "down"
-} elseif ($Build) {
+}
+elseif ($Build) {
     Copy-ComposeFile
     Run-DockerCompose "build"
-} else {
+}
+elseif ($Full) {
+    Copy-ComposeFile
+    Run-DockerCompose "build"
+    Run-DockerCompose "up -d"
+}
+else {
     Write-Host "Usage: .\setup.ps1 -Up | -Down | -Build"
     Write-Host "  -Up    : Copy compose file and start services"
     Write-Host "  -Down  : Copy compose file and stop services"
     Write-Host "  -Build : Copy compose file and build services"
+    Write-Host "  -Full : Runs -Build & -Up in one go"
 }
