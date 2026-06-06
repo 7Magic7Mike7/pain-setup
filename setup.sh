@@ -7,22 +7,30 @@ UP=false
 DOWN=false
 BUILD=false
 
+show_help() {
+    echo "Usage: ./setup.sh [--build] [--up] [--down]"
+    echo "  --build : Copy compose file and build services"
+    echo "  --up    : Copy compose file and start services"
+    echo "  --down  : Copy compose file and stop services"
+}
+
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -Up|--up)
+        -Up|--up|--u)
             UP=true
             shift
             ;;
-        -Down|--down)
+        -Down|--down|--d)
             DOWN=true
             shift
             ;;
-        -Build|--build)
+        -Build|--build|--b)
             BUILD=true
             shift
             ;;
         *)
             echo "Unknown option: $1"
+            show_help
             exit 1
             ;;
     esac
@@ -50,19 +58,22 @@ run_docker_compose() {
 }
 
 # Main logic
+EXEC_COMMAND=false
+if [ "$BUILD" = true ]; then
+    copy_compose_file
+    run_docker_compose "build"
+    EXEC_COMMAND=true
+fi
 if [ "$UP" = true ]; then
     copy_compose_file
     run_docker_compose "up -d"
+    EXEC_COMMAND=true
 elif [ "$DOWN" = true ]; then
     copy_compose_file
     run_docker_compose "down"
-elif [ "$BUILD" = true ]; then
-    copy_compose_file
-    run_docker_compose "build"
-else
-    echo "Usage: ./setup.sh [-Up] [-Down] [-Build]"
-    echo "  -Up    : Copy compose file and start services"
-    echo "  -Down  : Copy compose file and stop services"
-    echo "  -Build : Copy compose file and build services"
-    exit 1
+    EXEC_COMMAND=true
+fi
+
+if [ "$EXEC_COMMAND" = false ]; then
+    show_help
 fi
