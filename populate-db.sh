@@ -48,7 +48,7 @@ if [ $# -gt 0 ]; then
             # $1... table name
             # $2... additional column information
             echo "  Creating table $1..."
-            docker exec -it "$CONTAINER_ID" psql -U postgres -d pain_db -c "CREATE TABLE $1 ($COL_ID SERIAL PRIMARY KEY, $COL_AGGR_ID INTEGER REFERENCES $TableName($COL_ID), $COL_VALUE FLOAT NOT NULL, $COL_CATEGORY TEXT NOT NULL $2);"
+            docker exec -it "$CONTAINER_ID" psql -U postgres -d pain_db -c "CREATE TABLE $1 ($COL_ID SERIAL PRIMARY KEY, $COL_AGGR_ID INTEGER REFERENCES $1($COL_ID), $COL_VALUE FLOAT NOT NULL, $COL_CATEGORY TEXT NOT NULL $2);"
         }
         echo "Initializing database schema..."
         # initialize database schema based on config file
@@ -68,25 +68,25 @@ if [ $# -gt 0 ]; then
             #$2... source path
             #$3... destination path
             echo "Filling $1 with dummy data..."
-            docker cp "$2" "$($CONTAINER_ID):$3"
+            docker cp "$2" "$CONTAINER_ID:$3"
             # copy data from CSV into the table
             docker exec $CONTAINER_ID psql -U postgres -d pain_db -c "COPY $1 FROM '$3' CSV HEADER;"
             # reset the sequence for the table's serial ID column
             docker exec $CONTAINER_ID psql -U postgres -d pain_db -c "SELECT setval(pg_get_serial_sequence('$1', '$COL_ID'), COALESCE(MAX($COL_ID), 1)) FROM $1;"
-            Write-Host "  Imported data from $2 into $1 table"
+            echo "  Imported data from $2 into $1 table"
         }
 
         if [ $# -gt 2 ]; then
             CSV_ROOT_FOLDER="$3"
         else
-            CSV_ROOT_FOLDER="$WORKSPACE_ROOT/pain/data/actual"
+            CSV_ROOT_FOLDER="/tmp/data"
         fi
         echo "Filling database with dummy data..."
-        fill_table $TN_EMO "${CSV_ROOT_FOLDER}/emo.csv") "/tmp/emo.csv"
-        fill_table $TN_ENV "${CSV_ROOT_FOLDER}/env.csv") "/tmp/env.csv"
-        fill_table $TN_PHYS "${CSV_ROOT_FOLDER}/phys.csv") "/tmp/phys.csv"
-        fill_table $TN_SOCIOECO "${CSV_ROOT_FOLDER}/socioeco.csv") "/tmp/socioeco.csv"
-        fill_table $TN_EXPERIMENTAL "${CSV_ROOT_FOLDER}/experimental.csv") "/tmp/experimental.csv"
+        fill_table $TN_EMO "${CSV_ROOT_FOLDER}/emo.csv" "/tmp/emo.csv"
+        fill_table $TN_ENV "${CSV_ROOT_FOLDER}/env.csv" "/tmp/env.csv"
+        fill_table $TN_PHYS "${CSV_ROOT_FOLDER}/phys.csv" "/tmp/phys.csv"
+        fill_table $TN_SOCIOECO "${CSV_ROOT_FOLDER}/socioeco.csv" "/tmp/socioeco.csv"
+        fill_table $TN_EXPERIMENTAL "${CSV_ROOT_FOLDER}/experimental.csv" "/tmp/experimental.csv"
 
         exit 0
 
