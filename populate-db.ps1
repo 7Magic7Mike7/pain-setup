@@ -2,9 +2,11 @@
 param(
     [switch]$Init,
     [switch]$Fill,
+    [string]$FillTarget,
     [switch]$Test,
     [switch]$Reset,
-    [switch]$Info
+    [switch]$Connect,
+    [string]$Clear
 )
 
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
@@ -66,11 +68,16 @@ elseif ($Fill) {
     #$csvRootFolder = Join-Path $workspaceRoot "pain\data\actual"
     $csvRootFolder = Join-Path $workspaceRoot "pain\data\dummy\data_types"
     Write-Host "Filling database with data..."
-    Fill-Table $TN_EMO (Join-Path $csvRootFolder "emo.csv") "/tmp/emo.csv"
-    Fill-Table $TN_ENV (Join-Path $csvRootFolder "env.csv") "/tmp/env.csv"
-    Fill-Table $TN_PHYS (Join-Path $csvRootFolder "phys.csv") "/tmp/phys.csv"
-    Fill-Table $TN_SOCIOECO (Join-Path $csvRootFolder "socioeco.csv") "/tmp/socioeco.csv"
-    Fill-Table $TN_EXPERIMENTAL (Join-Path $csvRootFolder "experimental.csv") "/tmp/experimental.csv"
+    if ($FillTarget) {
+        Fill-Table "${FillTarget}pain" (Join-Path $csvRootFolder "$FillTarget.csv") "/tmp/$FillTarget.csv"
+    }
+    else {
+        Fill-Table $TN_EMO (Join-Path $csvRootFolder "emo.csv") "/tmp/emo.csv"
+        Fill-Table $TN_ENV (Join-Path $csvRootFolder "env.csv") "/tmp/env.csv"
+        Fill-Table $TN_PHYS (Join-Path $csvRootFolder "phys.csv") "/tmp/phys.csv"
+        Fill-Table $TN_SOCIOECO (Join-Path $csvRootFolder "socioeco.csv") "/tmp/socioeco.csv"
+        Fill-Table $TN_EXPERIMENTAL (Join-Path $csvRootFolder "experimental.csv") "/tmp/experimental.csv"
+    }
     Write-Host "Finished importing data!"
 }
 elseif ($Test) {
@@ -91,16 +98,21 @@ elseif ($Reset) {
     Drop-Table $TN_SOCIOECO
     Drop-Table $TN_EXPERIMENTAL
 }
-elseif ($Info) {
-    Write-Host "Preparing info for database..."
-    Write-Host "TODO"
+elseif ($Connect) {
+    Write-Host "Connecting to database..."
     docker exec -it $containerId psql -U postgres -d pain_db #"\dt"
+}
+elseif ($Clear) {
+    Write-Host "Clearing table ${Clear}pain"
+    docker exec -it $containerId psql -U postgres -d pain_db -c "TRUNCATE ${Clear}pain"
 }
 else {
     Write-Host "Usage: .\populate-db.ps1 -Init | -Fill | -Test | -Reset | -Info"
     Write-Host "  -Init  : Initialize database schema (run once)"
     Write-Host "  -Fill  : Fill database with dummy data (run after init)"
+    Write-Host "        -FillTarget: additional argument to determine which table to fill"
     Write-Host "  -Test  : Test database connection and contents"
     Write-Host "  -Reset : Reset database by dropping all known tables"
-    Write-Host "  -Info  : Prints some information about the database's tables"
+    Write-Host "  -Connect  : Connect to the Database"
+    Write-Host "  -Clear : Clears all rows from a specified table"
 }
