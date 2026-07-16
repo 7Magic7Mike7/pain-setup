@@ -48,15 +48,38 @@ if [ $# -gt 0 ]; then
             # $1... table name
             # $2... additional column information
             echo "  Creating table $1..."
-            docker exec -it "$CONTAINER_ID" psql -U postgres -d pain_db -c "CREATE TABLE $1 ($COL_ID SERIAL PRIMARY KEY, $COL_AGGR_ID INTEGER REFERENCES $1($COL_ID), $COL_VALUE FLOAT NOT NULL, $COL_CATEGORY TEXT NOT NULL $2);"
+            docker exec -it "$CONTAINER_ID" psql -U postgres -d pain_db -c "CREATE TABLE $1 ($COL_ID SERIAL PRIMARY KEY $2);"
+        }
+        create_data_table() {
+            # $1... table name
+            # $2... additional column information
+            create_table $1 ", $COL_AGGR_ID INTEGER REFERENCES $1($COL_ID), $COL_VALUE FLOAT NOT NULL, $COL_CATEGORY TEXT NOT NULL $2"
+        }
+        create_metrics_table() {
+            # $1... table name
+            # $2... additional column information
+            create_table $1 ", $COL_DT $TYPE_DT NOT NULL, $COL_USER_ID INTEGER REFERENCES $TNM_USERS($COL_ID) $2"
         }
         echo "Initializing database schema..."
         # initialize database schema based on config file
-        create_table $TN_EMO ", $COL_COUNTRY TEXT NOT NULL, $COL_WORD TEXT NOT NULL"
-        create_table $TN_ENV ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
-        create_table $TN_PHYS ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
-        create_table $TN_SOCIOECO ", $COL_COUNTRY TEXT NOT NULL"
-        create_table $TN_EXPERIMENTAL ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
+        # initialize tables for our data
+        create_data_table $TN_EMO ", $COL_COUNTRY TEXT NOT NULL, $COL_WORD TEXT NOT NULL"
+        create_data_table $TN_ENV ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
+        create_data_table $TN_PHYS ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
+        create_data_table $TN_SOCIOECO ", $COL_COUNTRY TEXT NOT NULL"
+        create_data_table $TN_EXPERIMENTAL ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
+
+        # initialize enums for metrics tables
+        # CREATE TYPE $TYPE_CATEGORY AS ENUM ('person', 'color', 'activity', 'adjective', 'bigthing', 'smallthing');
+        docker exec -it $CONTAINER_ID psql -U postgres -d pain_db -c "CREATE TYPE ${TYPE_TOGGLE_KIND} AS ENUM ('layer', 'word', 'temporality', 'relation', 'category');"
+        # TODO: create enum type for element & vizMode
+        #docker exec -it $CONTAINER_ID psql -U postgres -d pain_db -c "CREATE TYPE ${TYPE_TOGGLE_ELEM} AS STRING;"
+        #docker exec -it $CONTAINER_ID psql -U postgres -d pain_db -c "CREATE TYPE ${TYPE_VIS_MODE} AS STRING;"
+        # initialize tables for usage metrics
+        create_table $TNM_USERS ", $COL_DT $TYPE_DT NOT NULL, $COL_USER_ID TEXT NOT NULL"
+        create_metrics_table $TNM_TOGGLE ", $COL_KIND TEXT NOT NULL, $COL_ELEM TEXT NOT NULL, $COL_ENABLED BOOL NOT NULL"
+        create_metrics_table $TNM_STEP ", $COL_STEP INTEGER NOT NULL"
+        create_metrics_table $TNM_VIS ", $COL_VIS_MODE TEXT NOT NULL"
         exit 0
 
     # ############################################################
@@ -117,6 +140,11 @@ if [ $# -gt 0 ]; then
         drop_table $TN_PHYS
         drop_table $TN_SOCIOECO
         drop_table $TN_EXPERIMENTAL
+        # todo drop types
+        drop_table $TNM_TOGGLE
+        drop_table $TNM_STEP
+        drop_table $TNM_VIS
+        drop_table $TNM_USERS
         exit 0
     fi
 fi
