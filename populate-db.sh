@@ -125,7 +125,9 @@ if [ $# -gt 0 ]; then
         fi
         docker exec -it "$CONTAINER_ID" psql -U postgres -d pain_db -c "SELECT * FROM $TABLE_NAME LIMIT '$LIMIT';"
         exit 0
-
+    elif [ $1 == "--connect" ]; then
+        echo "Connecting to database..."
+        docker exec -it $CONTAINER_ID psql -U postgres -d pain_db
     # ############################################################
     #   RESET
     # ############################################################
