@@ -78,7 +78,7 @@ if [ $# -gt 0 ]; then
         # initialize tables for usage metrics
         create_table $TNM_USERS ", $COL_DT $TYPE_DT NOT NULL, $COL_USER_ID TEXT NOT NULL"
         create_metrics_table $TNM_TOGGLE ", $COL_KIND TEXT NOT NULL, $COL_ELEM TEXT NOT NULL, $COL_ENABLED BOOL NOT NULL"
-        create_metrics_table $TNM_STEP ", $COL_STEP INTEGER NOT NULL"
+        create_metrics_table $TNM_STEP ", $COL_STEP SMALLINT NOT NULL CHECK ($COL_STEP BETWEEN 0 AND $TYPE_STEP_MAX)"
         create_metrics_table $TNM_VIS ", $COL_VIS_MODE TEXT NOT NULL"
         exit 0
 
@@ -132,21 +132,23 @@ if [ $# -gt 0 ]; then
     #   RESET
     # ############################################################
     elif [ $1 == "--reset" ]; then
-        drop_table() {
-            #$1... table name
-            docker exec -it "$CONTAINER_ID" psql -U postgres -d pain_db -c "DROP TABLE IF EXISTS $1;"
+        drop() {
+            #$1... TABLE or TYPE, depending on what we want to delete
+            #$2... table name
+            docker exec -it "$CONTAINER_ID" psql -U postgres -d pain_db -c "DROP $1 IF EXISTS $2;"
         }
         echo "Resetting database..."
-        drop_table $TN_EMO
-        drop_table $TN_ENV
-        drop_table $TN_PHYS
-        drop_table $TN_SOCIOECO
-        drop_table $TN_EXPERIMENTAL
+        drop "TABLE" $TN_EMO
+        drop "TABLE" $TN_ENV
+        drop "TABLE" $TN_PHYS
+        drop "TABLE" $TN_SOCIOECO
+        drop "TABLE" $TN_EXPERIMENTAL
         # todo drop types
-        drop_table $TNM_TOGGLE
-        drop_table $TNM_STEP
-        drop_table $TNM_VIS
-        drop_table $TNM_USERS
+        drop "TABLE" $TNM_TOGGLE
+        drop "TABLE" $TNM_STEP
+        drop "TABLE" $TNM_VIS
+        drop "TABLE" $TNM_USERS
+        drop "TYPE" $TYPE_TOGGLE_KIND
         exit 0
     fi
 fi
