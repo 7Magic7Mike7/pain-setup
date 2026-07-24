@@ -32,8 +32,12 @@ if [ $# -gt 0 ]; then
     fi
     # load config file
     if [ -f "$CONFIG_FILE" ]; then
-        # source the config file to import variables into environment
-        . "$CONFIG_FILE"
+        # parse the values from the config file (one "key=value" per line)
+        while IFS='=' read -r key value; do
+            [[ -z "$key" || "$key" == \#* ]] && continue
+            printf -v "$key" '%s' "$value"
+            echo "key = ${key}, value = ${value}"
+        done < $CONFIG_FILE
     else
         echo "Missing DB config: $CONFIG_FILE" >&2
         exit 1
@@ -75,9 +79,9 @@ if [ $# -gt 0 ]; then
         create_data_table $TN_EXPERIMENTAL ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
 
         # initialize enums for metrics tables
-        create_enum ${TYPE_TOGGLE_KIND} ${VALUES_TYPE_TOGGLE_KIND}
+        create_enum ${TYPE_TOGGLE_KIND} "${VALUES_TYPE_TOGGLE_KIND}"
         create_enum ${TYPE_TOGGLE_ELEM} "'${TN_EMO}', '${TN_ENV}', '${TN_PHYS}', '${TN_SOCIOECO}', '${TN_EXPERIMENTAL}', ${VALUES_TYPE_TOGGLE_ELEM_PAIN}, ${VALUES_TYPE_TOGGLE_ELEM_TEMPORALITY}, ${VALUES_TYPE_TOGGLE_ELEM_RELATIONS}"
-        create_enum ${TYPE_VIS_MODE} ${VALUES_TYPE_VIS_MODE}
+        create_enum ${TYPE_VIS_MODE} "${VALUES_TYPE_VIS_MODE}"
         # initialize tables for usage metrics
         create_table $TNM_USERS ", $COL_DT $TYPE_DT NOT NULL, $COL_USER_ID TEXT NOT NULL"
         create_metrics_table $TNM_USER_COORDINATES ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
@@ -142,17 +146,19 @@ if [ $# -gt 0 ]; then
             docker exec -it "$CONTAINER_ID" psql -U postgres -d pain_db -c "DROP $1 IF EXISTS $2;"
         }
         echo "Resetting database..."
+        # drop data tables
         drop "TABLE" $TN_EMO
         drop "TABLE" $TN_ENV
         drop "TABLE" $TN_PHYS
         drop "TABLE" $TN_SOCIOECO
         drop "TABLE" $TN_EXPERIMENTAL
-        # todo drop types
+        # drop user tables
         drop "TABLE" $TNM_TOGGLE
         drop "TABLE" $TNM_STEP
         drop "TABLE" $TNM_VIS
         drop "TABLE" $TNM_USER_COORDINATES
         drop "TABLE" $TNM_USERS
+        # drop types
         drop "TYPE" ${TYPE_TOGGLE_KIND}
         drop "TYPE" ${TYPE_TOGGLE_ELEM}
         drop "TYPE" ${TYPE_VIS_MODE}

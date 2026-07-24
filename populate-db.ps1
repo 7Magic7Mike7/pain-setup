@@ -119,16 +119,19 @@ elseif ($Reset) {
     }
 
     Write-Host "Resetting database..."
+    # drop data tables
     Drop "TABLE" $TN_EMO
     Drop "TABLE" $TN_ENV
     Drop "TABLE" $TN_PHYS
     Drop "TABLE" $TN_SOCIOECO
     Drop "TABLE" $TN_EXPERIMENTAL
+    # drop user tables
     Drop "TABLE" $TNM_TOGGLE
     Drop "TABLE" $TNM_STEP
     Drop "TABLE" $TNM_VIS
     Drop "TABLE" $TNM_USER_COORDINATES
     Drop "TABLE" $TNM_USERS
+    # drop types
     Drop "TYPE" ${TYPE_TOGGLE_KIND}
     Drop "TYPE" ${TYPE_TOGGLE_ELEM}
     Drop "TYPE" ${TYPE_VIS_MODE}
