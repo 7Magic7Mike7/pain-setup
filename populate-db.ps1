@@ -41,15 +41,41 @@ if ($Init) {
     function Create-Table {
         param ($TableName, $Additions)
 
-        docker exec -it $containerId psql -U postgres -d pain_db -c "CREATE TABLE $TableName ($COL_ID SERIAL PRIMARY KEY, $COL_AGGR_ID INTEGER REFERENCES $TableName($COL_ID), $COL_VALUE FLOAT NOT NULL, $COL_CATEGORY TEXT NOT NULL $Additions);"
+        docker exec -it $containerId psql -U postgres -d pain_db -c "CREATE TABLE $TableName ($COL_ID SERIAL PRIMARY KEY $Additions);"
+    }
+    function Create-Data-Table {
+        param ($TableName, $Additions)
+
+        Create-Table $TableName ", $COL_AGGR_ID INTEGER REFERENCES $TableName($COL_ID), $COL_VALUE FLOAT NOT NULL, $COL_CATEGORY TEXT NOT NULL $Additions"
+    }
+    function Create-Metrics-Table {
+        param ($TableName, $Additions)
+
+        Create-Table $TableName ", $COL_DT $TYPE_DT NOT NULL, $COL_USER_ID INTEGER REFERENCES $TNM_USERS($COL_ID) $Additions"
+    }
+    function Create-Enum {
+        param ($EnumName, $EnumValues)
+
+        docker exec -it $containerId psql -U postgres -d pain_db -c "CREATE TYPE ${EnumName} AS ENUM (${EnumValues});"
     }
     Write-Host "Initializing database schema..."
     # create Emotional, Environment, Physical & Socioeconomic Layer Table
-    Create-Table $TN_EMO ", $COL_COUNTRY TEXT NOT NULL, $COL_WORD TEXT NOT NULL"
-    Create-Table $TN_ENV ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
-    Create-Table $TN_PHYS ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
-    Create-Table $TN_SOCIOECO ", $COL_COUNTRY TEXT NOT NULL"
-    Create-Table $TN_EXPERIMENTAL ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
+    Create-Data-Table $TN_EMO ", $COL_COUNTRY TEXT NOT NULL, $COL_WORD TEXT NOT NULL"
+    Create-Data-Table $TN_ENV ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
+    Create-Data-Table $TN_PHYS ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
+    Create-Data-Table $TN_SOCIOECO ", $COL_COUNTRY TEXT NOT NULL"
+    Create-Data-Table $TN_EXPERIMENTAL ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
+    # create enums for metrics tables
+    Create-Enum ${TYPE_TOGGLE_KIND} ${VALUES_TYPE_TOGGLE_KIND}
+    Create-Enum ${TYPE_TOGGLE_ELEM} "'${TN_EMO}', '${TN_ENV}', '${TN_PHYS}', '${TN_SOCIOECO}', '${TN_EXPERIMENTAL}', ${VALUES_TYPE_TOGGLE_ELEM_PAIN}, ${VALUES_TYPE_TOGGLE_ELEM_TEMPORALITY}, ${VALUES_TYPE_TOGGLE_ELEM_RELATIONS}"
+    Create-Enum ${TYPE_VIS_MODE} ${VALUES_TYPE_VIS_MODE}
+    # create metrics tables
+    Create-Table $TNM_USERS ", $COL_DT $TYPE_DT NOT NULL, $COL_USER_ID TEXT NOT NULL"
+    Create-Metrics-Table $TNM_USER_COORDINATES ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
+    Create-Metrics-Table $TNM_TOGGLE ", $COL_KIND ${TYPE_TOGGLE_KIND} NOT NULL, $COL_ELEM ${TYPE_TOGGLE_ELEM} NOT NULL, $COL_ENABLED BOOL NOT NULL"
+    Create-Metrics-Table $TNM_STEP ", $COL_STEP SMALLINT NOT NULL CHECK ($COL_STEP BETWEEN 0 AND $TYPE_STEP_MAX)"
+    Create-Metrics-Table $TNM_VIS ", $COL_VIS_MODE ${TYPE_VIS_MODE} NOT NULL"
+
     Write-Host "Finished initializing!"
 }
 elseif ($Fill) {
@@ -85,18 +111,28 @@ elseif ($Test) {
     docker exec -it $containerId psql -U postgres -d pain_db -c "SELECT * FROM $TN_ENV LIMIT 7;"
 }
 elseif ($Reset) {
-    function Drop-Table {
-        param ($TableName)
+    function Drop {
+        param ($Type, $TableName)
 
-        docker exec -it $containerId psql -U postgres -d pain_db -c "DROP TABLE IF EXISTS $TableName;"
+        docker exec -it $containerId psql -U postgres -d pain_db -c "DROP $Type IF EXISTS $TableName;"
+        Write-Host " -dropped $Type $TableName"
     }
 
     Write-Host "Resetting database..."
-    Drop-Table $TN_EMO
-    Drop-Table $TN_ENV
-    Drop-Table $TN_PHYS
-    Drop-Table $TN_SOCIOECO
-    Drop-Table $TN_EXPERIMENTAL
+    Drop "TABLE" $TN_EMO
+    Drop "TABLE" $TN_ENV
+    Drop "TABLE" $TN_PHYS
+    Drop "TABLE" $TN_SOCIOECO
+    Drop "TABLE" $TN_EXPERIMENTAL
+    Drop "TABLE" $TNM_TOGGLE
+    Drop "TABLE" $TNM_STEP
+    Drop "TABLE" $TNM_VIS
+    Drop "TABLE" $TNM_USER_COORDINATES
+    Drop "TABLE" $TNM_USERS
+    Drop "TYPE" ${TYPE_TOGGLE_KIND}
+    Drop "TYPE" ${TYPE_TOGGLE_ELEM}
+    Drop "TYPE" ${TYPE_VIS_MODE}
+    Write-Host "Done dropping!"
 }
 elseif ($Connect) {
     Write-Host "Connecting to database..."

@@ -60,6 +60,11 @@ if [ $# -gt 0 ]; then
             # $2... additional column information
             create_table $1 ", $COL_DT $TYPE_DT NOT NULL, $COL_USER_ID INTEGER REFERENCES $TNM_USERS($COL_ID) $2"
         }
+        create_enum() {
+            # $1... enum name
+            # $2... all enum values
+            docker exec -it $CONTAINER_ID psql -U postgres -d pain_db -c "CREATE TYPE $1 AS ENUM ($2);"
+        }
         echo "Initializing database schema..."
         # initialize database schema based on config file
         # initialize tables for our data
@@ -70,13 +75,12 @@ if [ $# -gt 0 ]; then
         create_data_table $TN_EXPERIMENTAL ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
 
         # initialize enums for metrics tables
-        # CREATE TYPE $TYPE_CATEGORY AS ENUM ('person', 'color', 'activity', 'adjective', 'bigthing', 'smallthing');
-        docker exec -it $CONTAINER_ID psql -U postgres -d pain_db -c "CREATE TYPE ${TYPE_TOGGLE_KIND} AS ENUM ('layer', 'word', 'temporality', 'relation', 'category');"
-        # TODO: create enum type for element & vizMode
-        #docker exec -it $CONTAINER_ID psql -U postgres -d pain_db -c "CREATE TYPE ${TYPE_TOGGLE_ELEM} AS STRING;"
-        #docker exec -it $CONTAINER_ID psql -U postgres -d pain_db -c "CREATE TYPE ${TYPE_VIS_MODE} AS STRING;"
+        create_enum ${TYPE_TOGGLE_KIND} ${VALUES_TYPE_TOGGLE_KIND}
+        create_enum ${TYPE_TOGGLE_ELEM} "'${TN_EMO}', '${TN_ENV}', '${TN_PHYS}', '${TN_SOCIOECO}', '${TN_EXPERIMENTAL}', ${VALUES_TYPE_TOGGLE_ELEM_PAIN}, ${VALUES_TYPE_TOGGLE_ELEM_TEMPORALITY}, ${VALUES_TYPE_TOGGLE_ELEM_RELATIONS}"
+        create_enum ${TYPE_VIS_MODE} ${VALUES_TYPE_VIS_MODE}
         # initialize tables for usage metrics
         create_table $TNM_USERS ", $COL_DT $TYPE_DT NOT NULL, $COL_USER_ID TEXT NOT NULL"
+        create_metrics_table $TNM_USER_COORDINATES ", $COL_LAT FLOAT NOT NULL, $COL_LNG FLOAT NOT NULL"
         create_metrics_table $TNM_TOGGLE ", $COL_KIND TEXT NOT NULL, $COL_ELEM TEXT NOT NULL, $COL_ENABLED BOOL NOT NULL"
         create_metrics_table $TNM_STEP ", $COL_STEP SMALLINT NOT NULL CHECK ($COL_STEP BETWEEN 0 AND $TYPE_STEP_MAX)"
         create_metrics_table $TNM_VIS ", $COL_VIS_MODE TEXT NOT NULL"
@@ -147,8 +151,11 @@ if [ $# -gt 0 ]; then
         drop "TABLE" $TNM_TOGGLE
         drop "TABLE" $TNM_STEP
         drop "TABLE" $TNM_VIS
+        drop "TABLE" $TNM_USER_COORDINATES
         drop "TABLE" $TNM_USERS
-        drop "TYPE" $TYPE_TOGGLE_KIND
+        drop "TYPE" ${TYPE_TOGGLE_KIND}
+        drop "TYPE" ${TYPE_TOGGLE_ELEM}
+        drop "TYPE" ${TYPE_VIS_MODE}
         exit 0
     fi
 fi
