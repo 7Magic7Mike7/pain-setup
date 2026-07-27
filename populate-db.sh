@@ -36,7 +36,6 @@ if [ $# -gt 0 ]; then
         while IFS='=' read -r key value; do
             [[ -z "$key" || "$key" == \#* ]] && continue
             printf -v "$key" '%s' "$value"
-            echo "key = ${key}, value = ${value}"
         done < $CONFIG_FILE
     else
         echo "Missing DB config: $CONFIG_FILE" >&2
@@ -110,7 +109,7 @@ if [ $# -gt 0 ]; then
         if [ $# -gt 2 ]; then
             CSV_ROOT_FOLDER="$3"
         else
-            CSV_ROOT_FOLDER="/tmp/data"
+            CSV_ROOT_FOLDER="../pain-data"
         fi
         echo "Filling database with dummy data..."
         fill_table $TN_EMO "${CSV_ROOT_FOLDER}/emo.csv" "/tmp/emo.csv"
