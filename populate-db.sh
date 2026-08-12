@@ -111,12 +111,17 @@ if [ $# -gt 0 ]; then
         else
             CSV_ROOT_FOLDER="../pain-data"
         fi
-        echo "Filling database with dummy data..."
-        fill_table $TN_EMO "${CSV_ROOT_FOLDER}/emo.csv" "/tmp/emo.csv"
-        fill_table $TN_ENV "${CSV_ROOT_FOLDER}/env.csv" "/tmp/env.csv"
-        fill_table $TN_PHYS "${CSV_ROOT_FOLDER}/phys.csv" "/tmp/phys.csv"
-        fill_table $TN_SOCIOECO "${CSV_ROOT_FOLDER}/socioeco.csv" "/tmp/socioeco.csv"
-        fill_table $TN_EXPERIMENTAL "${CSV_ROOT_FOLDER}/experimental.csv" "/tmp/experimental.csv"
+        if [ $# -gt 3 ]; then
+            TARGET_TABLE="$4"
+            fill_table "${TARGET_TABLE}pain" "${CSV_ROOT_FOLDER}/${TARGET_TABLE}.csv" "/tmp/${TARGET_TABLE}.csv"
+        else
+            echo "Filling database with dummy data..."
+            fill_table $TN_EMO "${CSV_ROOT_FOLDER}/emo.csv" "/tmp/emo.csv"
+            fill_table $TN_ENV "${CSV_ROOT_FOLDER}/env.csv" "/tmp/env.csv"
+            fill_table $TN_PHYS "${CSV_ROOT_FOLDER}/phys.csv" "/tmp/phys.csv"
+            fill_table $TN_SOCIOECO "${CSV_ROOT_FOLDER}/socioeco.csv" "/tmp/socioeco.csv"
+            fill_table $TN_EXPERIMENTAL "${CSV_ROOT_FOLDER}/experimental.csv" "/tmp/experimental.csv"
+        fi
 
         exit 0
 
@@ -162,6 +167,9 @@ if [ $# -gt 0 ]; then
         drop "TYPE" ${TYPE_TOGGLE_ELEM}
         drop "TYPE" ${TYPE_VIS_MODE}
         exit 0
+    elif [ $1 == "--clear" ]; then
+        echo "Clearing table = ${3}pain";
+        docker exec -it "$CONTAINER_ID" psql -U postgres -d pain_db -c "TRUNCATE ${3}pain;"
     fi
 fi
 
