@@ -12,6 +12,11 @@ services:
       - pain-db
     volumes:
       - ./pain-server/data:/usr/src/app/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "10"
 
   pain-db:
     build:
