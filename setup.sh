@@ -63,6 +63,12 @@ run_docker_compose() {
     )
 }
 
+# Function to export logs
+export_logs() {
+    echo "Exporting logs via script..."
+    ./export-logs.sh "pain-server" "./log-archive"
+}
+
 # Main logic
 EXEC_COMMAND=false
 if [ "$BUILD" = true ]; then
@@ -72,10 +78,13 @@ if [ "$BUILD" = true ]; then
 fi
 if [ "$UP" = true ]; then
     copy_compose_file
+    export_logs
+    run_docker_compose "down"
     run_docker_compose "up -d"
     EXEC_COMMAND=true
 elif [ "$DOWN" = true ]; then
     copy_compose_file
+    export_logs
     run_docker_compose "down"
     EXEC_COMMAND=true
 elif [ "$LOGS" = true ]; then
