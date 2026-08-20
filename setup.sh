@@ -6,12 +6,14 @@
 UP=false
 DOWN=false
 BUILD=false
+LOGS=false
 
 show_help() {
     echo "Usage: ./setup.sh [--build] [--up] [--down]"
     echo "  --build : Copy compose file and build services"
     echo "  --up    : Copy compose file and start services"
     echo "  --down  : Copy compose file and stop services"
+    echo "  --logs  : Follows the container logs"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -26,6 +28,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -Build|--build|--b)
             BUILD=true
+            shift
+            ;;
+        --logs)
+            LOGS=true
             shift
             ;;
         *)
@@ -48,12 +54,12 @@ copy_compose_file() {
     echo "Copied docker-compose.yml to workspace root"
 }
 
-# Function to run docker-compose
+# Function to run docker compose
 run_docker_compose() {
     local command=$1
     (
         cd "$WORKSPACE_ROOT"
-        docker-compose $command
+        docker compose $command
     )
 }
 
@@ -72,6 +78,12 @@ elif [ "$DOWN" = true ]; then
     copy_compose_file
     run_docker_compose "down"
     EXEC_COMMAND=true
+elif [ "$LOGS" = true ]; then
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    WORKSPACE_ROOT="$(dirname "$SCRIPT_DIR")"
+    COMPOSE_FILE="$WORKSPACE_ROOT/docker-compose.yml"
+    CONTAINER_ID=$(docker compose -f "$COMPOSE_FILE" ps -q pain-server)
+    docker logs -f ${CONTAINER_ID}
 fi
 
 if [ "$EXEC_COMMAND" = false ]; then
