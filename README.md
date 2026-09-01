@@ -45,3 +45,19 @@ reaches it over the Compose network at `http://pain-message:7246`.
 
 The message service adds no database, volume, or migration. Its repository must be available to
 the Docker build context before building the stack.
+
+## Compose Path Contract
+
+The tracked Compose file is copied to the workspace root before use. Running it in place from this
+repository is unsupported because its build contexts are relative to the workspace root.
+
+`pain-server` does not wait for `pain-message` at boot because it makes no boot-time message call.
+An early or unavailable sidecar request fails closed through the survey endpoint with HTTP 502.
+
+## Rollback
+
+1. Remove the `pain-message` service block from `docker-compose.yml`.
+2. Remove `PAIN_MESSAGE_URL` from the `pain-server` environment list.
+3. Copy the Compose file to the workspace root and rebuild `pain-server`.
+
+Rollback does not change `pain-db` or its named volume.
