@@ -1,7 +1,7 @@
 # PPP Map Setup
 
-Last Updated: 2026-09-01
-Version: 1.0
+Last Updated: 2026-09-02
+Version: 1.1
 
 This repository contains the Docker Compose configuration for the entire PPP Map project.
 It allows versioning the orchestration setup separately from individual services.
@@ -41,10 +41,12 @@ reaches it over the Compose network at `http://pain-message:7246`.
 ## Requirements
 - Docker and Docker Compose installed
 - Application repositories in sibling folders: `../pain-server`, `../pain-db`, `../pain-frontend`
-- Private `pain-message-based-on-survey` repository checked out beside the workspace root
+- An accepted P.A.I.N. Limited-Use Licence Authorization Record
+- Read access to the private `cstelmach/pain-message` package on GHCR
+- A successful `docker login ghcr.io` with a token carrying `read:packages`
 
-The message service adds no database, volume, or migration. Its repository must be available to
-the Docker build context before building the stack.
+The message service adds no database, volume, or migration. Compose pulls an immutable ARM64/AMD64
+manifest digest, so the private Corpus repository is not part of the workspace checkout.
 
 ## Compose Path Contract
 
