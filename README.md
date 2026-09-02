@@ -1,8 +1,4 @@
 # PPP Map Setup
-
-Last Updated: 2026-09-02
-Version: 1.1
-
 This repository contains the Docker Compose configuration for the entire PPP Map project.
 It allows versioning the orchestration setup separately from individual services.
 
@@ -26,40 +22,14 @@ It allows versioning the orchestration setup separately from individual services
 cp docker-compose.yml ../
 
 # Then run from workspace root
-docker compose up -d
-docker compose down
+docker-compose up -d
+docker-compose down
 ```
 
 ## Services
 - **pain-server**: Node.js/TypeScript API server with Python 3.11 support
 - **pain-db**: PostgreSQL 16 database
-- **pain-message**: Private Python sidecar that returns a survey paragraph and coordinate
-
-`pain-message` listens on container port `7246` and is not published to the host. `pain-server`
-reaches it over the Compose network at `http://pain-message:7246`.
 
 ## Requirements
 - Docker and Docker Compose installed
-- Application repositories in sibling folders: `../pain-server`, `../pain-db`, `../pain-frontend`
-- An accepted P.A.I.N. Limited-Use Licence Authorization Record
-- Read access to the private `cstelmach/pain-message` package on GHCR
-- A successful `docker login ghcr.io` with a token carrying `read:packages`
-
-The message service adds no database, volume, or migration. Compose pulls an immutable ARM64/AMD64
-manifest digest, so the private Corpus repository is not part of the workspace checkout.
-
-## Compose Path Contract
-
-The tracked Compose file is copied to the workspace root before use. Running it in place from this
-repository is unsupported because its build contexts are relative to the workspace root.
-
-`pain-server` does not wait for `pain-message` at boot because it makes no boot-time message call.
-An early or unavailable sidecar request fails closed through the survey endpoint with HTTP 502.
-
-## Rollback
-
-1. Remove the `pain-message` service block from `docker-compose.yml`.
-2. Remove `PAIN_MESSAGE_URL` from the `pain-server` environment list.
-3. Copy the Compose file to the workspace root and rebuild `pain-server`.
-
-Rollback does not change `pain-db` or its named volume.
+- Services in sibling folders: `../pain-server`, `../pain-db`

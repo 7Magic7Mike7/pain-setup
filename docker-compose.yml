@@ -20,16 +20,7 @@ services:
         max-file: "10"
 
   pain-message:
-    image: ghcr.io/cstelmach/pain-message@sha256:ea8b3cb38f6a4ee6ced1555d050a647336f465b1474cbf06677b420eb6707043
-    restart: unless-stopped
-    environment:
-      - PAIN_MESSAGE_HOST=0.0.0.0
-      - PAIN_MESSAGE_PORT=7246
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+    image: ghcr.io/cstelmach/pain-message@sha256:b98e0bd1d96a8beff8ef2de6348255b12ffa7a832cc7ff6b75c47de17e8ac704
 
   pain-db:
     build:
