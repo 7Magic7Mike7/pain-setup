@@ -6,7 +6,8 @@ param(
     [switch]$Test,
     [switch]$Reset,
     [switch]$Connect,
-    [string]$Clear
+    [string]$Clear,
+    [string]$ExportMetrics
 )
 
 $workspaceRoot = Split-Path -Parent $PSScriptRoot
@@ -114,7 +115,7 @@ elseif ($Reset) {
     function Drop {
         param ($Type, $TableName)
 
-        docker exec -it $containerId psql -U postgres -d pain_db -c "DROP $Type IF EXISTS $TableName;"
+        docker exec $containerId psql -U postgres -d pain_db -c "DROP $Type IF EXISTS $TableName;"
         Write-Host " -dropped $Type $TableName"
     }
 
@@ -142,8 +143,36 @@ elseif ($Connect) {
     docker exec -it $containerId psql -U postgres -d pain_db #"\dt"
 }
 elseif ($Clear) {
-    Write-Host "Clearing table ${Clear}pain"
-    docker exec -it $containerId psql -U postgres -d pain_db -c "TRUNCATE ${Clear}pain"
+    Write-Host "Clearing table ${Clear}"
+    docker exec -it $containerId psql -U postgres -d pain_db -c "TRUNCATE ${Clear}"
+}
+elseif ($ExportMetrics) {
+    function Export {
+        param ($TableName, $DestFile)
+        
+        docker exec $containerId psql -U postgres -d pain_db `
+            -c "\copy $TableName TO STDOUT WITH (FORMAT CSV, HEADER)" `
+            > $DestFile
+        if ($?) {
+            Write-Host " -exported ${TableName} to ${DestFile}"
+        }
+        else {
+            Write-Host " -FAILED to export ${TableName} to ${DestFile}"
+        }
+    }
+
+    Write-Host "Exporting metrics & user IDs..."
+    if ((Get-Item ${ExportMetrics}) -is [System.IO.DirectoryInfo]) {
+        $timeStamp = get-date -f yyyy-MM-dd-HH-mm-ss
+        Export $TNM_TOGGLE (Join-Path ${ExportMetrics} "${TNM_TOGGLE}_${timeStamp}.csv")
+        Export $TNM_STEP (Join-Path ${ExportMetrics} "${TNM_STEP}_${timeStamp}.csv")
+        Export $TNM_VIS (Join-Path ${ExportMetrics} "${TNM_VIS}_${timeStamp}.csv")
+        Export $TNM_USER_COORDINATES (Join-Path ${ExportMetrics} "${TNM_USER_COORDINATES}_${timeStamp}.csv")
+        Export $TNM_USERS (Join-Path ${ExportMetrics} "${TNM_USERS}_${timeStamp}.csv")
+    }
+    else {
+        Write-Host "ERROR: Provided path is not a folder!"
+    }
 }
 else {
     Write-Host "Usage: .\populate-db.ps1 -Init | -Fill | -Test | -Reset | -Info"
@@ -154,4 +183,5 @@ else {
     Write-Host "  -Reset : Reset database by dropping all known tables"
     Write-Host "  -Connect  : Connect to the Database"
     Write-Host "  -Clear : Clears all rows from a specified table"
+    Write-Host "  -ExportMetrics: Exports the data inside metric tables to csv files located in the specified folder"
 }
